@@ -2,7 +2,7 @@ FROM golang:alpine3.12 as golang
 RUN apk add bash make git zip tzdata ca-certificates gcc musl-dev
 WORKDIR /app
 COPY . .
-RUN make linux
+RUN go mod download gopkg.in/yaml.v3 && make linux
 
 FROM alpine:3.12
 # Dependencies

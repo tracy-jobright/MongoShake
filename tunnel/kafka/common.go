@@ -4,10 +4,12 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	LOG "github.com/vinllen/log4go"
 	"io/ioutil"
+	"os"
 	"strings"
 	"time"
+
+	LOG "github.com/vinllen/log4go"
 
 	"github.com/Shopify/sarama"
 	utils "github.com/alibaba/MongoShake/v2/common"
@@ -57,6 +59,21 @@ func NewConfig(rootCaFile string) (*Config, error) {
 		sslConfig.RootCAs = caCertPool
 		config.Net.TLS.Config = sslConfig
 		config.Net.TLS.Enable = true
+	}
+	
+	user, userExists := os.LookupEnv("KAFKA_USER")
+	password, passwordExists:= os.LookupEnv("KAFKA_PASSWORD")
+	if userExists && passwordExists {
+		LOG.Info("Kafka SASL/SCRAM authentication enabled")
+		config.Net.SASL.Enable = true
+		config.Net.SASL.User = user
+		config.Net.SASL.Password = password
+		config.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA512
+		config.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient { return &XDGSCRAMClient{HashGeneratorFcn: SHA512} }
+
+		tlsConfig := tls.Config{}
+		config.Net.TLS.Enable = true
+		config.Net.TLS.Config = &tlsConfig
 	}
 
 	return &Config{
